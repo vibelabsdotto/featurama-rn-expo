@@ -1,6 +1,7 @@
 // Modal - Featurama SDK Modal Demo
 
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { View, Modal, Platform, StyleSheet } from 'react-native';
 import { useThemeStore } from '@stores/themeStore';
 import {
@@ -14,6 +15,7 @@ import { Button } from '@components/common/Button';
 
 export default function ModalScreen() {
   const [visible, setVisible] = useState(false);
+  const router = useRouter();
   const isDark = useThemeStore((state) => state.isDark);
   const insets = useSafeAreaInsets();
 
@@ -21,8 +23,14 @@ export default function ModalScreen() {
     <ScreenLayout>
       <View style={styles.container}>
         <Button
-          title="Feature Requests"
+          title="React Native Modal (SDK header)"
           onPress={() => setVisible(true)}
+          variant="primary"
+          size="large"
+        />
+        <Button
+          title="Expo Router Stack (native header)"
+          onPress={() => router.push('/featurama')}
           variant="primary"
           size="large"
         />
@@ -66,6 +74,7 @@ export default function ModalScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    gap: 16,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,

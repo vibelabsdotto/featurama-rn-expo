@@ -64,6 +64,8 @@ export interface Comment {
   authorIdentifier: string;
   authorName?: string | null;
   authorRole: 'user' | 'developer';
+  /** Set by the public API when the device identifier is supplied; never exposes other authors' identifiers. */
+  isOwn?: boolean;
   voteCount: number;
   createdAt: string;
 }

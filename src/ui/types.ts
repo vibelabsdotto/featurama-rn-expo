@@ -22,3 +22,14 @@ export interface FeatureRequestsScreenProps {
    */
   theme?: Partial<FeaturamaTheme>;
 }
+
+export interface FeatureRequestsScreenInternalProps extends FeatureRequestsScreenProps {
+  nativeHeader?: boolean;
+  onNavigationChange?: (state: FeaturamaNavigationState) => void;
+}
+
+export interface FeaturamaNavigationState {
+  title: string;
+  screen: 'list' | 'create' | 'detail';
+  onBack: () => void;
+}

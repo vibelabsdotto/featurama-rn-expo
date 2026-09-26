@@ -38,6 +38,31 @@ npm run ios
 
 Run `npm run typecheck` and `npm run prepare` in the package root to verify the library and build distributable JS/types. Do not commit `example/.env.local` or real keys.
 
+## Expo Router native Stack header (opt-in)
+
+If your feedback screen is **itself an Expo Router Stack route**, import the optional entry point. The host owns the native header; the SDK updates its title and left action as the list, form and detail change. No Expo Router dependency is loaded from the default package entry.
+
+```tsx
+// app/_layout.tsx
+<Stack.Screen name="featurama" options={{ presentation: 'modal', headerShown: true }} />
+
+// app/featurama.tsx
+import { FeaturamaProvider } from '@vibelabsdotto/featurama-rn-expo';
+import { ExpoRouterFeatureRequestsScreen } from '@vibelabsdotto/featurama-rn-expo/expo-router';
+
+export default function FeedbackRoute() {
+  return (
+    <FeaturamaProvider config={{ apiKey: 'YOUR_PUBLIC_API_KEY' }}>
+      <ExpoRouterFeatureRequestsScreen colorScheme="light" accentColor="#1395d6" />
+    </FeaturamaProvider>
+  );
+}
+```
+
+The list's native close action dismisses the route (or calls `onClose` if supplied). Form/detail use native back actions to return to the list; the form's submit control is in the scrollable body so it stays available without a second header. Android Back and an attempted iOS modal-dismiss gesture on a child view return to the list before the route can close; on the list, the gesture dismisses the route. Returning from an unfinished form discards its draft, but a header title/state update alone does not.
+
+This mode requires an Expo Router **native Stack** route. In Tabs/other navigator contexts it falls back to the SDK header. Do not mount the opt-in entry point inside a React Native `Modal`: that modal is not a Stack route even if its parent is one. For a React Native `Modal`, or an app without Expo Router, use the normal `FeatureRequestsScreen` import and its existing SDK header. `example/` offers both modes side-by-side.
+
 ## API
 
 `FeaturamaClient` exposes `getConfig`, `getRequests`, `createRequest`, `updateRequest`, `toggleVote`, `getComments`, `addComment`, and comment-voting methods. The bundled `FeatureRequestsScreen` provides the end-user UI. Consult `src/types/index.ts` for input/output types.

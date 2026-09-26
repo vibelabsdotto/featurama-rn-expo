@@ -16,6 +16,7 @@ function RootLayoutNav() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="featurama" options={{ presentation: 'modal', headerShown: true }} />
       </Stack>
     </>
   );

@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
-import { useState } from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRef, useState } from 'react';
+import { View, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { SendIcon } from '../icons';
 import type { FeaturamaStrings } from '../strings/en';
@@ -9,22 +9,31 @@ interface AddCommentFormProps {
   strings: FeaturamaStrings;
   isSubmitting: boolean;
   safeAreaBottom: number;
-  onSubmit: (content: string) => void;
+  onSubmit: (content: string) => Promise<void>;
 }
 
 export function AddCommentForm({ strings, isSubmitting, safeAreaBottom, onSubmit }: AddCommentFormProps): JSX.Element {
   const theme = useTheme();
   const [content, setContent] = useState('');
+  const submittingRef = useRef(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmed = content.trim();
-    if (!trimmed || isSubmitting) return;
-    onSubmit(trimmed);
-    setContent('');
+    if (!trimmed || isSubmitting || submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      await onSubmit(trimmed);
+      setContent('');
+    } catch {
+      // Keep the draft so the user can retry without retyping it.
+      Alert.alert(strings.error);
+    } finally {
+      submittingRef.current = false;
+    }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border, paddingBottom: Math.max(safeAreaBottom, 80) }]}>
+    <View style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border, paddingBottom: Math.max(safeAreaBottom, 12) }]}>
       <TextInput
         style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
         placeholder={strings.commentPlaceholder}
@@ -38,6 +47,8 @@ export function AddCommentForm({ strings, isSubmitting, safeAreaBottom, onSubmit
       <TouchableOpacity
         style={[styles.sendButton, { backgroundColor: content.trim() ? theme.accent : theme.accentLight }]}
         onPress={handleSubmit}
+        accessibilityRole="button"
+        accessibilityLabel={strings.postComment}
         disabled={!content.trim() || isSubmitting}
       >
         {isSubmitting ? (

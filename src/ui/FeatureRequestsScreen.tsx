@@ -16,7 +16,7 @@ import { RequestList } from './components/RequestList';
 import { RequestDetailView } from './components/RequestDetailView';
 import { Branding } from './components/Branding';
 import { Fab } from './components/Fab';
-import type { FeatureRequestsScreenProps } from './types';
+import type { FeatureRequestsScreenInternalProps } from './types';
 import type { ProjectConfig, RequestFilter, FeatureRequest, Comment } from '../types';
 
 export function FeatureRequestsScreen({
@@ -26,8 +26,10 @@ export function FeatureRequestsScreen({
   safeAreaTop,
   safeAreaBottom,
   keyboardVerticalOffset,
+  nativeHeader = false,
+  onNavigationChange,
   theme: themeOverrides,
-}: FeatureRequestsScreenProps): JSX.Element {
+}: FeatureRequestsScreenInternalProps): JSX.Element {
   const theme = useMemo(
     () => ({ ...createTheme(accentColor, colorScheme), ...themeOverrides }),
     [accentColor, colorScheme, themeOverrides]
@@ -115,7 +117,15 @@ export function FeatureRequestsScreen({
       setComments([]);
       setIsLoadingComments(true);
       try {
-        const result = await client.getComments(request.id);
+        let authorIdentifier = voterId;
+        if (!authorIdentifier) {
+          try {
+            authorIdentifier = await getOrCreateVoterId();
+          } catch {
+            // Comments remain readable even if local identity storage fails.
+          }
+        }
+        const result = await client.getComments(request.id, authorIdentifier ?? undefined);
         setComments(result);
       } catch {
         // Silently fail — show empty comments
@@ -123,7 +133,7 @@ export function FeatureRequestsScreen({
         setIsLoadingComments(false);
       }
     },
-    [client]
+    [client, voterId]
   );
 
   const handleBack = useCallback(() => {
@@ -132,16 +142,25 @@ export function FeatureRequestsScreen({
     refetch(); // Refresh list to get updated commentCount
   }, [refetch]);
 
+  useEffect(() => {
+    if (!nativeHeader || !onNavigationChange) return;
+    onNavigationChange(selectedRequest
+      ? { screen: 'detail', title: selectedRequest.title, onBack: handleBack }
+      : isAdding
+        ? { screen: 'create', title: strings.newRequest, onBack: () => setIsAdding(false) }
+        : { screen: 'list', title: strings.title, onBack: onClose ?? (() => {}) });
+  }, [nativeHeader, onNavigationChange, selectedRequest, isAdding, strings, handleBack, onClose]);
+
   const handleAddComment = useCallback(
     async (content: string) => {
-      if (!voterId || !selectedRequest) return;
+      if (!voterId || !selectedRequest) throw new Error('Comment author is not ready');
       setIsSubmittingComment(true);
       try {
         const comment = await client.addComment(selectedRequest.id, {
           content,
           authorIdentifier: voterId,
         });
-        setComments((prev) => [...prev, comment]);
+        setComments((prev) => [...prev, { ...comment, isOwn: true }]);
         // Update local request commentCount
         setSelectedRequest((prev) =>
           prev ? { ...prev, commentCount: (prev.commentCount ?? 0) + 1 } : null
@@ -165,7 +184,9 @@ export function FeatureRequestsScreen({
           voterId
         );
         setComments((prev) =>
-          prev.map((c) => (c.id === commentId ? updated : c))
+          prev.map((c) => (c.id === commentId
+            ? { ...updated, isOwn: updated.isOwn ?? c.isOwn }
+            : c))
         );
       } finally {
         setCommentVotingIds((prev) => {
@@ -206,10 +227,12 @@ export function FeatureRequestsScreen({
             isSubmittingComment={isSubmittingComment}
             isVotingRequest={votingIds.has(selectedRequest.id)}
             commentVotingIds={commentVotingIds}
+            locale={locale}
             strings={strings}
             insetTop={insets.top}
             insetBottom={insets.bottom}
             keyboardVerticalOffset={effectiveKeyboardOffset}
+            nativeHeader={nativeHeader}
             onBack={handleBack}
             onToggleRequestVote={handleToggleRequestVoteInDetail}
             onToggleCommentVote={handleToggleCommentVote}
@@ -222,16 +245,13 @@ export function FeatureRequestsScreen({
             insetTop={insets.top}
             insetBottom={insets.bottom}
             keyboardVerticalOffset={effectiveKeyboardOffset}
+            nativeHeader={nativeHeader}
             onSubmit={handleSubmit}
             onCancel={() => setIsAdding(false)}
           />
         ) : (
           <>
-            <Header
-              strings={strings}
-              onClose={onClose}
-              insetTop={insets.top}
-            />
+            {!nativeHeader && <Header strings={strings} onClose={onClose} insetTop={insets.top} />}
             <FilterTabs
               activeFilter={activeFilter}
               onFilterChange={setActiveFilter}

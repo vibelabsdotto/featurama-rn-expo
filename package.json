@@ -7,6 +7,20 @@
   "types": "lib/typescript/index.d.ts",
   "react-native": "src/index",
   "source": "src/index",
+  "exports": {
+    ".": {
+      "types": "./lib/typescript/index.d.ts",
+      "react-native": "./src/index.ts",
+      "import": "./lib/module/index.js",
+      "require": "./lib/commonjs/index.js"
+    },
+    "./expo-router": {
+      "types": "./lib/typescript/expo-router.d.ts",
+      "react-native": "./src/expo-router.tsx",
+      "import": "./lib/module/expo-router.js",
+      "require": "./lib/commonjs/expo-router.js"
+    }
+  },
   "files": ["src", "lib", "ios", "android", "*.podspec", "react-native.config.js", "LICENSE", "README.md", "!**/__tests__", "!**/__fixtures__", "!**/__mocks__"],
   "scripts": {
     "prepare": "bob build",
@@ -22,6 +36,7 @@
   "peerDependencies": {
     "@react-native-async-storage/async-storage": ">=1.17.0",
     "expo-localization": ">=14.0.0",
+    "expo-router": ">=5.0.0",
     "react": ">=18.0.0",
     "react-native": ">=0.74.0",
     "react-native-localize": ">=3.0.0",
@@ -30,12 +45,14 @@
   "peerDependenciesMeta": {
     "@react-native-async-storage/async-storage": {"optional": false},
     "expo-localization": {"optional": true},
+    "expo-router": {"optional": true},
     "react-native-localize": {"optional": true},
     "react-native-svg": {"optional": false}
   },
   "devDependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@types/react": "~19.1.0",
+    "expo-router": "~6.0.15",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-builder-bob": "^0.23.0",

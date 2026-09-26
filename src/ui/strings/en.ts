@@ -26,6 +26,9 @@ export interface FeaturamaStrings {
   commentPlaceholder: string;
   postComment: string;
   developerBadge: string;
+  youBadge: string;
+  userBadge: string;
+  voteComment: string;
   pendingReview: string;
   badgePlanned: string;
   newRequest: string;
@@ -59,6 +62,9 @@ export const defaultStrings: FeaturamaStrings = {
   commentPlaceholder: 'Write a comment...',
   postComment: 'Post',
   developerBadge: 'Developer',
+  youBadge: 'You',
+  userBadge: 'User',
+  voteComment: 'Vote for comment',
   pendingReview: 'Pending Review',
   badgePlanned: 'Planned',
   newRequest: 'New Request',

@@ -212,10 +212,13 @@ export class FeaturamaClient {
   /**
    * Get comments for a feature request
    */
-  async getComments(requestId: string): Promise<Comment[]> {
+  async getComments(requestId: string, authorIdentifier?: string): Promise<Comment[]> {
+    const query = authorIdentifier
+      ? `?${new URLSearchParams({ authorIdentifier })}`
+      : '';
     return this.request<Comment[]>(
       'GET',
-      `/api/public/requests/${requestId}/comments`
+      `/api/public/requests/${requestId}/comments${query}`
     );
   }
 

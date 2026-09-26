@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { ChevronLeftIcon, ChevronUpIcon } from '../icons';
@@ -7,6 +7,7 @@ import { CommentItem } from './CommentItem';
 import { AddCommentForm } from './AddCommentForm';
 import type { FeatureRequest, Comment } from '../../types';
 import type { FeaturamaStrings } from '../strings/en';
+import type { SupportedLocale } from '../utils/locale';
 
 interface RequestDetailViewProps {
   request: FeatureRequest;
@@ -15,14 +16,16 @@ interface RequestDetailViewProps {
   isSubmittingComment: boolean;
   isVotingRequest: boolean;
   commentVotingIds: Set<string>;
+  locale: SupportedLocale;
   strings: FeaturamaStrings;
   insetTop: number;
   insetBottom: number;
   keyboardVerticalOffset: number;
+  nativeHeader?: boolean;
   onBack: () => void;
   onToggleRequestVote: () => void;
   onToggleCommentVote: (commentId: string) => void;
-  onAddComment: (content: string) => void;
+  onAddComment: (content: string) => Promise<void>;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -40,10 +43,12 @@ export function RequestDetailView({
   isSubmittingComment,
   isVotingRequest,
   commentVotingIds,
+  locale,
   strings,
   insetTop,
   insetBottom,
   keyboardVerticalOffset,
+  nativeHeader = false,
   onBack,
   onToggleRequestVote,
   onToggleCommentVote,
@@ -53,6 +58,26 @@ export function RequestDetailView({
   const hasVoted = request.hasVoted ?? false;
   const voteColor = hasVoted ? theme.accent : theme.textSecondary;
   const voteBg = hasVoted ? theme.accentLight : theme.gray100;
+  const orderedComments = useMemo(() => comments
+    .map((comment, index) => ({ comment, index, time: Date.parse(comment.createdAt) }))
+    .sort((a, b) => {
+      const aTime = Number.isNaN(a.time) ? Infinity : a.time;
+      const bTime = Number.isNaN(b.time) ? Infinity : b.time;
+      return aTime - bTime || a.index - b.index;
+    })
+    .map(({ comment }) => comment), [comments]);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollAfterSubmit = useRef(false);
+  const handleAddComment = async (content: string) => {
+    scrollAfterSubmit.current = true;
+    try {
+      await onAddComment(content);
+    } catch (error) {
+      scrollAfterSubmit.current = false;
+      throw error;
+    }
+  };
 
   // On Android, manually track keyboard height instead of using KeyboardAvoidingView
   // which doesn't properly reset after keyboard dismissal.
@@ -77,16 +102,26 @@ export function RequestDetailView({
       keyboardVerticalOffset={isIOS ? keyboardVerticalOffset : 0}
     >
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insetTop + 8, backgroundColor: theme.background, borderColor: theme.border }]}>
+      {!nativeHeader && <View style={[styles.header, { paddingTop: insetTop + 8, backgroundColor: theme.background, borderColor: theme.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.headerButton}>
           <ChevronLeftIcon size={22} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>{request.title}</Text>
         <View style={styles.headerButton} />
-      </View>
+      </View>}
 
       {/* Content */}
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        onContentSizeChange={() => {
+          if (scrollAfterSubmit.current) {
+            scrollAfterSubmit.current = false;
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }
+        }}
+      >
         {/* Title + status */}
         <Text style={[styles.title, { color: theme.text }]}>{request.title}</Text>
         <View style={styles.badgeRow}>
@@ -139,11 +174,13 @@ export function RequestDetailView({
             <Text style={[styles.emptyHint, { color: theme.textSecondary }]}>{strings.noCommentsHint}</Text>
           </View>
         ) : (
-          comments.map((comment) => (
+          orderedComments.map((comment) => (
             <CommentItem
               key={comment.id}
               comment={comment}
+              isOwn={comment.isOwn === true}
               isVoting={commentVotingIds.has(comment.id)}
+              locale={locale}
               strings={strings}
               onToggleVote={onToggleCommentVote}
             />
@@ -157,7 +194,7 @@ export function RequestDetailView({
           strings={strings}
           isSubmitting={isSubmittingComment}
           safeAreaBottom={insetBottom}
-          onSubmit={onAddComment}
+          onSubmit={handleAddComment}
         />
       </View>
     </KeyboardAvoidingView>

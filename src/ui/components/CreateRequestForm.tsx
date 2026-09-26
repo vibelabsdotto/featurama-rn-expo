@@ -22,6 +22,7 @@ interface CreateRequestFormProps {
   insetTop: number;
   insetBottom: number;
   keyboardVerticalOffset: number;
+  nativeHeader?: boolean;
   onSubmit: (title: string, description: string, email?: string) => Promise<void>;
   onCancel: () => void;
 }
@@ -32,6 +33,7 @@ export function CreateRequestForm({
   insetTop,
   insetBottom,
   keyboardVerticalOffset,
+  nativeHeader = false,
   onSubmit,
   onCancel,
 }: CreateRequestFormProps): JSX.Element {
@@ -91,7 +93,7 @@ export function CreateRequestForm({
       keyboardVerticalOffset={keyboardVerticalOffset}
     >
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insetTop + 8, borderColor: theme.border }]}>
+      {!nativeHeader && <View style={[styles.header, { paddingTop: insetTop + 8, borderColor: theme.border }]}>
         <TouchableOpacity onPress={onCancel} style={styles.headerButton}>
           <CloseIcon size={22} color={theme.text} />
         </TouchableOpacity>
@@ -111,7 +113,7 @@ export function CreateRequestForm({
             </Text>
           )}
         </TouchableOpacity>
-      </View>
+      </View>}
 
       {/* Form body */}
       <ScrollView
@@ -163,6 +165,19 @@ export function CreateRequestForm({
             )}
           </View>
         )}
+        {nativeHeader && (
+          <TouchableOpacity
+            style={[styles.submitButton, styles.bodySubmitButton, { backgroundColor: canSubmit ? theme.accent : theme.accentLight }]}
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+          >
+            {isSubmitting ? <ActivityIndicator size="small" color={theme.accentForeground} /> : (
+              <Text style={[styles.submitText, { color: canSubmit ? theme.accentForeground : theme.textSecondary }]}>
+                {strings.submit}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -204,6 +219,10 @@ const styles = StyleSheet.create({
   submitText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  bodySubmitButton: {
+    minHeight: 48,
+    marginTop: 8,
   },
   scrollView: {
     flex: 1,
