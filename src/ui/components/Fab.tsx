@@ -15,6 +15,8 @@ export function Fab({ onPress, safeAreaBottom }: FabProps): JSX.Element {
     <TouchableOpacity
       style={[styles.fab, { backgroundColor: theme.accent, bottom: safeAreaBottom + 24 }]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Create feature request"
       activeOpacity={0.8}
     >
       <PlusIcon size={24} color={theme.accentForeground} />

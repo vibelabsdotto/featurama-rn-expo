@@ -8,13 +8,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
   scheme: 'featurama-tester',
-  splash: {
-    image: './assets/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#f8f8f7',
-  },
+
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.featurama.tester',
@@ -27,11 +22,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: 'com.featurama.tester',
     versionCode: 1,
-    edgeToEdgeEnabled: true,
     softwareKeyboardLayoutMode: 'pan',
   },
   plugins: [
     'expo-router',
+    'expo-status-bar',
     'expo-build-properties',
     [
       'expo-localization',
@@ -45,6 +40,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
+        image: './assets/splash-icon.png',
+        resizeMode: 'contain',
         backgroundColor: '#f8f8f7',
         dark: {
           backgroundColor: '#191919',

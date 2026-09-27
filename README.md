@@ -26,7 +26,7 @@ The SDK defaults to `https://api.featurama.app`. For the new Preview, set `baseU
 
 ## Local example
 
-`example/` is an Expo SDK 54 app linked to the package source. Copy `example/.env.example` to `example/.env.local`, insert a Preview project API key, then:
+`example/` is an Expo SDK 57 app linked to the package source. Copy `example/.env.example` to `example/.env.local`, insert a Preview project API key, then:
 
 ```sh
 npm ci
@@ -40,15 +40,15 @@ Run `npm run typecheck` and `npm run prepare` in the package root to verify the 
 
 ## Expo Router native Stack header (opt-in)
 
-If your feedback screen is **itself an Expo Router Stack route**, import the optional entry point. The host owns the native header; the SDK updates its title and left action as the list, form and detail change. No Expo Router dependency is loaded from the default package entry.
+If your feedback screen is **itself an Expo Router Stack route**, import the matching optional entry point: `expo-router` for Router 5/6, or `expo-router-v57` for Router 57. The host owns the native header; the SDK updates its title and left action as the list, form and detail change. No Expo Router dependency is loaded from the default package entry.
 
 ```tsx
 // app/_layout.tsx
 <Stack.Screen name="featurama" options={{ presentation: 'modal', headerShown: true }} />
 
-// app/featurama.tsx
+// app/featurama.tsx (Expo Router 57)
 import { FeaturamaProvider } from '@vibelabsdotto/featurama-rn-expo';
-import { ExpoRouterFeatureRequestsScreen } from '@vibelabsdotto/featurama-rn-expo/expo-router';
+import { ExpoRouterFeatureRequestsScreen } from '@vibelabsdotto/featurama-rn-expo/expo-router-v57';
 
 export default function FeedbackRoute() {
   return (

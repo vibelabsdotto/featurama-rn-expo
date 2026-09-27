@@ -33,13 +33,9 @@ config.resolver.extraNodeModules = {
   ),
   'react-native-svg': path.resolve(appNodeModules, 'react-native-svg'),
   'expo-router': path.resolve(appNodeModules, 'expo-router'),
-  '@react-navigation/native': path.resolve(appNodeModules, '@react-navigation/native'),
 };
 
 config.resolver.blockList = [
-  new RegExp(
-    `${escapePathForRegex(path.resolve(sdkPath, 'node_modules/@react-navigation'))}\\/.*`
-  ),
   new RegExp(
     `${escapePathForRegex(path.resolve(sdkPath, 'node_modules/expo-router'))}\\/.*`
   ),

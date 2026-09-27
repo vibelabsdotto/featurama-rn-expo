@@ -1,5 +1,5 @@
 import { FeaturamaProvider } from '@vibelabsdotto/featurama-rn-expo';
-import { ExpoRouterFeatureRequestsScreen } from '@vibelabsdotto/featurama-rn-expo/expo-router';
+import { ExpoRouterFeatureRequestsScreen } from '@vibelabsdotto/featurama-rn-expo/expo-router-v57';
 import { useThemeStore } from '@stores/themeStore';
 import { FEATURAMA_CONFIG } from '@/config';
 

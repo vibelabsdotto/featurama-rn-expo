@@ -25,6 +25,8 @@ export function RequestCard({ request, isVoting, strings, onToggleVote, onPress 
   return (
     <TouchableOpacity
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={request.title}
       onPress={() => onPress(request)}
       style={[
         styles.requestItem,

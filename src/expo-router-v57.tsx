@@ -1,9 +1,9 @@
 import type { JSX } from 'react';
-import { usePreventRemove } from '@react-navigation/native';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { ExpoRouterFeatureRequestsScreenBase } from './expo-router-common';
 import type { FeatureRequestsScreenProps } from './ui/types';
 
-/** Expo Router 5/6 adapter. For Expo SDK 57 use the /expo-router-v57 entry instead. */
+/** Expo Router 57+ adapter: uses Expo Router's own navigation context. */
 export function ExpoRouterFeatureRequestsScreen(
   props: FeatureRequestsScreenProps
 ): JSX.Element {

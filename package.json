@@ -1,6 +1,6 @@
 {
   "name": "@vibelabsdotto/featurama-rn-expo",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Featurama SDK for React Native and Expo",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -19,20 +19,51 @@
       "react-native": "./src/expo-router.tsx",
       "import": "./lib/module/expo-router.js",
       "require": "./lib/commonjs/expo-router.js"
+    },
+    "./expo-router-v57": {
+      "types": "./lib/typescript/expo-router-v57.d.ts",
+      "react-native": "./src/expo-router-v57.tsx",
+      "import": "./lib/module/expo-router-v57.js",
+      "require": "./lib/commonjs/expo-router-v57.js"
     }
   },
-  "files": ["src", "lib", "ios", "android", "*.podspec", "react-native.config.js", "LICENSE", "README.md", "!**/__tests__", "!**/__fixtures__", "!**/__mocks__"],
+  "files": [
+    "src",
+    "lib",
+    "ios",
+    "android",
+    "*.podspec",
+    "react-native.config.js",
+    "LICENSE",
+    "README.md",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__"
+  ],
   "scripts": {
     "prepare": "bob build",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["react-native", "expo", "feature-requests", "featurama", "sdk"],
-  "repository": {"type": "git", "url": "https://github.com/vibelabsdotto/featurama-rn-expo.git"},
+  "keywords": [
+    "react-native",
+    "expo",
+    "feature-requests",
+    "featurama",
+    "sdk"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vibelabsdotto/featurama-rn-expo.git"
+  },
   "author": "VibeLabs",
   "license": "MIT",
-  "bugs": {"url": "https://github.com/vibelabsdotto/featurama-rn-expo/issues"},
+  "bugs": {
+    "url": "https://github.com/vibelabsdotto/featurama-rn-expo/issues"
+  },
   "homepage": "https://github.com/vibelabsdotto/featurama-rn-expo#readme",
-  "publishConfig": {"access": "public"},
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "@react-native-async-storage/async-storage": ">=1.17.0",
     "expo-localization": ">=14.0.0",
@@ -43,31 +74,59 @@
     "react-native-svg": ">=13.0.0"
   },
   "peerDependenciesMeta": {
-    "@react-native-async-storage/async-storage": {"optional": false},
-    "expo-localization": {"optional": true},
-    "expo-router": {"optional": true},
-    "react-native-localize": {"optional": true},
-    "react-native-svg": {"optional": false}
+    "@react-native-async-storage/async-storage": {
+      "optional": false
+    },
+    "expo-localization": {
+      "optional": true
+    },
+    "expo-router": {
+      "optional": true
+    },
+    "react-native-localize": {
+      "optional": true
+    },
+    "react-native-svg": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@types/react": "~19.1.0",
-    "expo-router": "~6.0.15",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
+    "@react-navigation/native": "^7.4.1",
+    "@types/node": "^24.0.0",
+    "@types/react": "~19.2.4",
+    "expo": "~57.0.25",
+    "expo-constants": "~57.0.19",
+    "expo-router": "~57.0.23",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
     "react-native-builder-bob": "^0.23.0",
+    "react-native-reanimated": "^4.5.1",
     "react-native-svg": "^15.15.0",
-    "typescript": "~5.9.2"
+    "react-native-worklets": "^0.10.1",
+    "typescript": "~6.0.3"
   },
   "codegenConfig": {
     "name": "FeaturamaInsetsSpec",
     "type": "modules",
     "jsSrcsDir": "src",
-    "android": {"javaPackageName": "com.featurama.reactnative"}
+    "android": {
+      "javaPackageName": "com.featurama.reactnative"
+    }
   },
   "react-native-builder-bob": {
     "source": "src",
     "output": "lib",
-    "targets": ["commonjs", "module", ["typescript", {"project": "tsconfig.build.json"}]]
+    "targets": [
+      "commonjs",
+      "module",
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
   }
 }

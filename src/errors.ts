@@ -33,10 +33,11 @@ export class FeaturamaError extends Error {
     this.statusCode = statusCode;
     this.details = details;
 
-    // Maintains proper stack trace for where error was thrown (only in V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, FeaturamaError);
-    }
+    // V8-only extension; React Native's Error typings do not declare it.
+    const captureStackTrace = (Error as ErrorConstructor & {
+      captureStackTrace?: (target: object, constructor: Function) => void;
+    }).captureStackTrace;
+    captureStackTrace?.(this, FeaturamaError);
   }
 
   /**

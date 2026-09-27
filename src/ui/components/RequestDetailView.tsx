@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Keyboard, Platform, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { ChevronLeftIcon, ChevronUpIcon } from '../icons';
 import { CommentItem } from './CommentItem';
@@ -94,13 +94,39 @@ export function RequestDetailView({
   }, []);
 
   const isIOS = Platform.OS === 'ios';
+  const containerRef = useRef<View>(null);
+  const keyboardTop = useRef<number | null>(null);
+  const [keyboardOverlap, setKeyboardOverlap] = useState(0);
+  const measureKeyboardOverlap = useCallback(() => {
+    containerRef.current?.measureInWindow((_x, y, _width, height) => {
+      const top = keyboardTop.current;
+      // A native Stack may resize the view itself. Only compensate for the
+      // part of the keyboard that still overlaps this SDK-owned container.
+      setKeyboardOverlap(top === null ? 0 : Math.max(0, y + height - (top - keyboardVerticalOffset)));
+    });
+  }, [keyboardVerticalOffset]);
+
+  useEffect(() => {
+    if (!isIOS) return;
+    const change = Keyboard.addListener('keyboardWillChangeFrame', (event) => {
+      keyboardTop.current = event.endCoordinates.screenY;
+      measureKeyboardOverlap();
+    });
+    const shown = Keyboard.addListener('keyboardDidShow', (event) => {
+      keyboardTop.current = event.endCoordinates.screenY;
+      measureKeyboardOverlap();
+    });
+    const hide = () => {
+      keyboardTop.current = null;
+      setKeyboardOverlap(0);
+    };
+    const hiding = Keyboard.addListener('keyboardWillHide', hide);
+    const hidden = Keyboard.addListener('keyboardDidHide', hide);
+    return () => { change.remove(); shown.remove(); hiding.remove(); hidden.remove(); };
+  }, [isIOS, measureKeyboardOverlap]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={isIOS ? 'padding' : undefined}
-      keyboardVerticalOffset={isIOS ? keyboardVerticalOffset : 0}
-    >
+    <View ref={containerRef} style={styles.container} onLayout={isIOS ? measureKeyboardOverlap : undefined}>
       {/* Header */}
       {!nativeHeader && <View style={[styles.header, { paddingTop: insetTop + 8, backgroundColor: theme.background, borderColor: theme.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.headerButton}>
@@ -189,15 +215,16 @@ export function RequestDetailView({
       </ScrollView>
 
       {/* Add comment form */}
-      <View style={!isIOS && androidKeyboardHeight > 0 ? { marginBottom: androidKeyboardHeight } : undefined}>
+      <View style={isIOS ? (keyboardOverlap > 0 ? { marginBottom: keyboardOverlap } : undefined)
+        : androidKeyboardHeight > 0 ? { marginBottom: androidKeyboardHeight } : undefined}>
         <AddCommentForm
           strings={strings}
           isSubmitting={isSubmittingComment}
-          safeAreaBottom={insetBottom}
+          safeAreaBottom={isIOS && keyboardOverlap > 0 ? 0 : insetBottom}
           onSubmit={handleAddComment}
         />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
