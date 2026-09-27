@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Keyboard, Platform, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Keyboard, Platform, StyleSheet, Dimensions } from 'react-native';
+import type { KeyboardEvent, LayoutChangeEvent } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { ChevronLeftIcon, ChevronUpIcon } from '../icons';
 import { CommentItem } from './CommentItem';
@@ -94,39 +95,52 @@ export function RequestDetailView({
   }, []);
 
   const isIOS = Platform.OS === 'ios';
-  const containerRef = useRef<View>(null);
-  const keyboardTop = useRef<number | null>(null);
+  const keyboardHeight = useRef(0);
+  const containerLayout = useRef({ width: 0, height: 0, restingHeight: 0 });
   const [keyboardOverlap, setKeyboardOverlap] = useState(0);
-  const measureKeyboardOverlap = useCallback(() => {
-    containerRef.current?.measureInWindow((_x, y, _width, height) => {
-      const top = keyboardTop.current;
-      // A native Stack may resize the view itself. Only compensate for the
-      // part of the keyboard that still overlaps this SDK-owned container.
-      setKeyboardOverlap(top === null ? 0 : Math.max(0, y + height - (top - keyboardVerticalOffset)));
-    });
+  const updateKeyboardOverlap = useCallback(() => {
+    // The composer is bottom-anchored. Fabric's measureInWindow can omit a
+    // native sheet's translation, so use keyboard height, not absolute view Y.
+    const { height, restingHeight } = containerLayout.current;
+    const resizedByHost = Math.max(0, restingHeight - height);
+    setKeyboardOverlap(keyboardHeight.current === 0 ? 0
+      : Math.max(0, keyboardHeight.current - resizedByHost + keyboardVerticalOffset));
   }, [keyboardVerticalOffset]);
+
+  const handleContainerLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    const previous = containerLayout.current;
+    // A width change starts a new orientation/layout baseline.
+    const restingHeight = keyboardHeight.current === 0 || width !== previous.width
+      ? height : previous.restingHeight;
+    containerLayout.current = { width, height, restingHeight };
+    updateKeyboardOverlap();
+  }, [updateKeyboardOverlap]);
 
   useEffect(() => {
     if (!isIOS) return;
-    const change = Keyboard.addListener('keyboardWillChangeFrame', (event) => {
-      keyboardTop.current = event.endCoordinates.screenY;
-      measureKeyboardOverlap();
-    });
-    const shown = Keyboard.addListener('keyboardDidShow', (event) => {
-      keyboardTop.current = event.endCoordinates.screenY;
-      measureKeyboardOverlap();
-    });
+    const update = (event: KeyboardEvent) => {
+      const { screenY, height } = event.endCoordinates;
+      keyboardHeight.current = screenY >= Dimensions.get('window').height ? 0 : height;
+      updateKeyboardOverlap();
+    };
     const hide = () => {
-      keyboardTop.current = null;
+      keyboardHeight.current = 0;
       setKeyboardOverlap(0);
     };
+    const metrics = Keyboard.metrics();
+    keyboardHeight.current = metrics?.height ?? 0;
+    updateKeyboardOverlap();
+    const change = Keyboard.addListener('keyboardWillChangeFrame', update);
+    const changed = Keyboard.addListener('keyboardDidChangeFrame', update);
+    const shown = Keyboard.addListener('keyboardDidShow', update);
     const hiding = Keyboard.addListener('keyboardWillHide', hide);
     const hidden = Keyboard.addListener('keyboardDidHide', hide);
-    return () => { change.remove(); shown.remove(); hiding.remove(); hidden.remove(); };
-  }, [isIOS, measureKeyboardOverlap]);
+    return () => { change.remove(); shown.remove(); hiding.remove(); hidden.remove(); changed.remove(); };
+  }, [isIOS, updateKeyboardOverlap]);
 
   return (
-    <View ref={containerRef} style={styles.container} onLayout={isIOS ? measureKeyboardOverlap : undefined}>
+    <View style={styles.container} onLayout={isIOS ? handleContainerLayout : undefined}>
       {/* Header */}
       {!nativeHeader && <View style={[styles.header, { paddingTop: insetTop + 8, backgroundColor: theme.background, borderColor: theme.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.headerButton}>

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useFeaturama } from './useFeaturama';
 import type {
   FeatureRequest,
   PaginatedResponse,
-  GetRequestsOptions,
+  UseRequestsOptions,
   UseRequestsResult,
 } from '../types';
 
@@ -34,68 +34,82 @@ import type {
  * }
  * ```
  */
-export function useRequests(options: GetRequestsOptions = {}): UseRequestsResult {
+export function useRequests(options: UseRequestsOptions = {}): UseRequestsResult {
   const { client } = useFeaturama();
-  const { pageSize = 20, filter, submitterIdentifier } = options;
+  const { pageSize = 20, filter, submitterIdentifier, enabled = true } = options;
+  const query = useMemo(
+    () => ({ client, pageSize, filter, submitterIdentifier, enabled }),
+    [client, pageSize, filter, submitterIdentifier, enabled]
+  );
 
   const [data, setData] = useState<PaginatedResponse<FeatureRequest> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Track if component is mounted to prevent state updates after unmount
-  const isMountedRef = useRef(true);
+  const activeQueryRef = useRef<typeof query | null>(null);
+  const latestRequestRef = useRef(0);
 
   const fetchData = useCallback(
     async (page: number, append: boolean = false) => {
+      // Also reject callbacks retained by an earlier filter, identity or client.
+      if (!query.enabled || activeQueryRef.current !== query) return;
+      const requestId = ++latestRequestRef.current;
+      const isCurrent = () =>
+        activeQueryRef.current === query && latestRequestRef.current === requestId;
       setIsLoading(true);
       setError(null);
 
       try {
-        const response = await client.getRequests({ page, pageSize, filter, submitterIdentifier });
+        const response = await query.client.getRequests({
+          page,
+          pageSize: query.pageSize,
+          filter: query.filter,
+          submitterIdentifier: query.submitterIdentifier,
+        });
 
-        if (!isMountedRef.current) return;
+        if (!isCurrent()) return;
 
-        if (append && data) {
-          // Append new items to existing data for infinite scroll
-          setData({
-            ...response,
-            items: [...data.items, ...response.items],
-          });
-        } else {
-          setData(response);
-        }
+        setData((previous) => append && previous
+          ? { ...response, items: [...previous.items, ...response.items] }
+          : response);
 
         setCurrentPage(page);
       } catch (err) {
-        if (!isMountedRef.current) return;
+        if (!isCurrent()) return;
         setError(err instanceof Error ? err : new Error('Unknown error'));
       } finally {
-        if (isMountedRef.current) {
+        if (isCurrent()) {
           setIsLoading(false);
         }
       }
     },
-    [client, pageSize, filter, submitterIdentifier, data]
+    [query]
   );
 
-  // Initial fetch
+  // A new query owns a fresh list; its predecessors must never publish again.
   useEffect(() => {
-    isMountedRef.current = true;
-    fetchData(1);
+    activeQueryRef.current = query;
+    setData(null);
+    setCurrentPage(1);
+    setError(null);
+    if (query.enabled) {
+      void fetchData(1);
+    } else {
+      setIsLoading(false);
+    }
 
     return () => {
-      isMountedRef.current = false;
+      activeQueryRef.current = null;
+      ++latestRequestRef.current;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, pageSize, filter, submitterIdentifier]);
+  }, [query, fetchData]);
 
   const refetch = useCallback(async () => {
-    setCurrentPage(1);
     await fetchData(1, false);
   }, [fetchData]);
 
-  const hasNextPage = data
+  const hasNextPage = enabled && data
     ? currentPage * pageSize < data.totalCount
     : false;
 

@@ -31,6 +31,7 @@ export type {
   CreateFeatureRequestInput,
   UpdateFeatureRequestInput,
   GetRequestsOptions,
+  UseRequestsOptions,
   RequestFilter,
   UseRequestsResult,
   ToggleVoteResult,

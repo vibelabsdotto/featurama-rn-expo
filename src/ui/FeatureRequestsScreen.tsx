@@ -44,6 +44,8 @@ export function FeatureRequestsScreen({
   const [activeFilter, setActiveFilter] = useState<RequestFilter>('new');
   const [isAdding, setIsAdding] = useState(false);
   const [voterId, setVoterId] = useState<string | null>(null);
+  const [voterIdError, setVoterIdError] = useState<Error | null>(null);
+  const [identityAttempt, setIdentityAttempt] = useState(0);
   const [votingIds, setVotingIds] = useState<Set<string>>(new Set());
 
   // Detail view state
@@ -63,18 +65,43 @@ export function FeatureRequestsScreen({
     pageSize: 50,
     filter: activeFilter,
     submitterIdentifier: voterId ?? undefined,
+    enabled: voterId !== null,
   });
 
   useEffect(() => {
-    getOrCreateVoterId().then(setVoterId);
-    client.getConfig().then(setConfig).catch(() => {
+    let active = true;
+    getOrCreateVoterId().then((id) => {
+      if (active) setVoterId(id);
+    }).catch((err: unknown) => {
+      if (active) {
+        setVoterIdError(err instanceof Error ? err : new Error('Unable to load device identity'));
+      }
+    });
+    return () => { active = false; };
+  }, [identityAttempt]);
+
+  useEffect(() => {
+    let active = true;
+    client.getConfig().then((result) => {
+      if (active) setConfig(result);
+    }).catch(() => {
       // Config fetch failed — use defaults silently
     });
+    return () => { active = false; };
   }, [client]);
+
+  const handleRefetch = useCallback(async () => {
+    if (voterId === null) {
+      setVoterIdError(null);
+      setIdentityAttempt((attempt) => attempt + 1);
+      return;
+    }
+    await refetch();
+  }, [voterId, refetch]);
 
   const handleSubmit = useCallback(
     async (title: string, description: string, email?: string) => {
-      if (!voterId) return;
+      if (!voterId) throw new Error('Request author is not ready');
       await client.createRequest({
         title,
         description,
@@ -259,13 +286,13 @@ export function FeatureRequestsScreen({
             />
             <RequestList
               data={data}
-              isLoading={isLoading}
-              error={error}
+              isLoading={voterId === null ? voterIdError === null : isLoading}
+              error={voterIdError ?? error}
               votingIds={votingIds}
               strings={strings}
               safeAreaBottom={insets.bottom}
               onToggleVote={handleToggleVote}
-              onRefetch={refetch}
+              onRefetch={handleRefetch}
               onRequestPress={handleRequestPress}
             />
             {showBranding && <Branding safeAreaBottom={insets.bottom} />}

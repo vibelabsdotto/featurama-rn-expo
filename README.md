@@ -67,4 +67,19 @@ This mode requires an Expo Router **native Stack** route. In Tabs/other navigato
 
 `FeaturamaClient` exposes `getConfig`, `getRequests`, `createRequest`, `updateRequest`, `toggleVote`, `getComments`, `addComment`, and comment-voting methods. The bundled `FeatureRequestsScreen` provides the end-user UI. Consult `src/types/index.ts` for input/output types.
 
+### Loading requests with an asynchronous identity
+
+The bundled screen waits for its persisted device identity before fetching requests, so own pending requests remain visible. Identity-storage failures show a retry action instead of fetching anonymously.
+
+Custom UIs can defer `useRequests` in the same way:
+
+```tsx
+const requests = useRequests({
+  submitterIdentifier: voterId ?? undefined,
+  enabled: voterId != null,
+});
+```
+
+`enabled` defaults to `true`. When `false`, automatic fetching, `refetch`, and `fetchNextPage` are paused. Changing the client, filter, page size, identity, or enabled state resets the list and invalidates in-flight responses. Within the same query, only the most recently started fetch may update data, errors, and loading state.
+
 MIT © VibeLabs.

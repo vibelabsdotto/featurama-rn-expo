@@ -1,4 +1,5 @@
 const VOTER_ID_KEY = 'featurama_voter_id';
+let initialization: Promise<string> | null = null;
 
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -8,7 +9,7 @@ function generateUUID(): string {
   });
 }
 
-export async function getOrCreateVoterId(): Promise<string> {
+async function readOrCreateVoterId(): Promise<string> {
   const AsyncStorage = require('@react-native-async-storage/async-storage').default as
     import('@react-native-async-storage/async-storage').AsyncStorageStatic;
   let id = await AsyncStorage.getItem(VOTER_ID_KEY);
@@ -17,4 +18,14 @@ export async function getOrCreateVoterId(): Promise<string> {
     await AsyncStorage.setItem(VOTER_ID_KEY, id);
   }
   return id;
+}
+
+export function getOrCreateVoterId(): Promise<string> {
+  // Concurrent first mounts must not create different owners for the same device.
+  if (!initialization) {
+    initialization = readOrCreateVoterId().finally(() => {
+      initialization = null;
+    });
+  }
+  return initialization;
 }

@@ -33,7 +33,7 @@ export function AddCommentForm({ strings, isSubmitting, safeAreaBottom, onSubmit
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border, paddingBottom: Math.max(safeAreaBottom, 12) }]}>
+    <View style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border, paddingBottom: Math.max(safeAreaBottom, 16) }]}>
       <TextInput
         style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
         placeholder={strings.commentPlaceholder}
@@ -77,12 +77,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
+    minHeight: 44,
     maxHeight: 100,
   },
   sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },

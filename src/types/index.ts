@@ -138,6 +138,12 @@ export interface GetRequestsOptions {
   submitterIdentifier?: string;
 }
 
+/** Options for the React hook, separate from the HTTP request options. */
+export interface UseRequestsOptions extends GetRequestsOptions {
+  /** Pause all fetching until prerequisites such as the device identity are ready. */
+  enabled?: boolean;
+}
+
 /**
  * Return type for the useRequests hook
  */
