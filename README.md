@@ -88,4 +88,27 @@ const requests = useRequests({
 
 `enabled` defaults to `true`. When `false`, automatic fetching, `refetch`, and `fetchNextPage` are paused. Changing the client, filter, page size, identity, or enabled state resets the list and invalidates in-flight responses. Within the same query, only the most recently started fetch may update data, errors, and loading state.
 
+## Maintainer CI and releases
+
+CI uses Woodpecker at `https://ci.vibelabs.to`, not GitHub Actions. The coordinator runs on Coolify; workflows target the isolated Linux laptop VM with `role=release` and `platform=linux/amd64`. The laptop must be running and awake. Jobs remain queued while the worker is unavailable.
+
+`.woodpecker/ci.yaml` checks pushes and manual runs on `main`. It clones the exact event commit, installs SDK/example dependencies with lifecycle scripts disabled, typechecks both projects, explicitly builds the SDK, and checks the contents and SHA512 of the generated tarball. Build images and the Git clone plugin are digest-pinned. Pull requests cannot start jobs on this worker.
+
+A stable `vVERSION` tag also publishes the exact checked tarball. Commit and push the package version and lockfile to `main` before pushing the corresponding tag. The release guards require the tag, package version and commit to match, and verify the commit is reachable from remote `main`. They reject prereleases, downgrades, archive changes, and already-published versions with different compressed bytes. An identical existing release is verified instead of published again. A failed or ambiguous npm write is followed by registry reads, never an automatic second publication attempt.
+
+The package-scoped `npm_token` repository secret is available only for tag events and the pinned publish image. No npm credentials are supplied to the install/build step. Publication disables lifecycle scripts and verifies the public version, `latest` tag, and downloaded tarball afterward. Renew the granular npm token before it expires. npm has announced removal of granular-token direct publishing in January 2027; continued publishing will require a separately approved supported OIDC publisher or stage-only automation with maintainer promotion.
+
+Install the Woodpecker CLI, authenticate through its official browser flow, then use:
+
+```sh
+woodpecker-cli setup --context vibelabs --server https://ci.vibelabs.to
+woodpecker-cli info
+woodpecker-cli repo show vibelabsdotto/featurama-rn-expo
+woodpecker-cli pipeline ls vibelabsdotto/featurama-rn-expo
+woodpecker-cli pipeline queue
+woodpecker-cli lint --strict .woodpecker/ci.yaml
+```
+
+macOS CLI tokens are stored in Keychain, not the context JSON. Do not put administrative CLI tokens in the worker VM. A manual check can be queued with `woodpecker-cli pipeline create --branch main vibelabsdotto/featurama-rn-expo`; this does not publish. `.ci-artifacts/` is ignored local build output, not package source. Rebuilding historical `0.1.5` with the newer pinned npm toolchain can produce different gzip bytes despite identical uncompressed files, so the existing-version integrity guard intentionally refuses to republish it.
+
 MIT © VibeLabs.

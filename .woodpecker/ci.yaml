@@ -1,0 +1,42 @@
+# Push/manual on main checks the SDK. Only stable vVERSION tags can publish.
+# The scripts enforce repository, exact commit, tag/version and remote-main ancestry.
+labels:
+  platform: linux/amd64
+  role: release
+
+when:
+  - event: [push, manual]
+    branch: main
+    ref: refs/heads/main
+    repo: vibelabsdotto/featurama-rn-expo
+  - event: tag
+    ref: refs/tags/v*
+    repo: vibelabsdotto/featurama-rn-expo
+
+clone:
+  - name: git
+    image: docker.io/woodpeckerci/plugin-git:2.10.0@sha256:0f06b03ec33137b556c77538563f66c400339052d0c5199d4c3ad1a2a37e1964
+    settings:
+      partial: false
+      depth: 0
+
+steps:
+  - name: build-typecheck-pack
+    image: node:24-bookworm-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6
+    commands:
+      # Slim has no git. Installation happens only in this secret-free container.
+      - apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+      - node scripts/ci-build.mjs
+
+  - name: publish-exact-tarball
+    image: node:24-bookworm-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6
+    environment:
+      NPM_TOKEN:
+        from_secret: npm_token
+    commands:
+      # No installation, build or npm lifecycle runs in the secret-bearing step.
+      - node scripts/ci-publish.mjs --publish
+    when:
+      - event: tag
+        ref: refs/tags/v*
+        repo: vibelabsdotto/featurama-rn-expo

@@ -9,6 +9,7 @@ example/.env.local
 
 # Build output
 lib/
+.ci-artifacts/
 example/dist/
 android/build/
 ios/build/
