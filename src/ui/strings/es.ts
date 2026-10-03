@@ -10,6 +10,8 @@ export const strings: FeaturamaStrings = {
   descriptionPlaceholder: 'Describe la función...',
   submit: 'Enviar',
   cancel: 'Cancelar',
+  back: 'Volver',
+  close: 'Cerrar',
   emailPlaceholder: 'Tu correo electrónico',
   emailEncouragement: 'Añade tu correo para que podamos contactarte',
   emailRequired: 'El correo es obligatorio',
@@ -20,6 +22,7 @@ export const strings: FeaturamaStrings = {
   empty: 'Aún no hay solicitudes',
   emptyHint: '¡Sé el primero en sugerir una función!',
   error: 'Algo salió mal',
+  mutationError: 'No se pudo guardar el cambio. Comprueba tu conexión e inténtalo de nuevo.',
   retry: 'Reintentar',
   comments: 'Comentarios',
   commentsCount: '{count} comentarios',
@@ -33,5 +36,6 @@ export const strings: FeaturamaStrings = {
   voteComment: 'Votar por comentario',
   pendingReview: 'Pendiente de revisi\u00f3n',
   badgePlanned: 'Planificado',
+  badgeDeclined: 'Rechazado',
   newRequest: 'Nueva solicitud',
 };

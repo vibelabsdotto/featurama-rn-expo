@@ -1,8 +1,11 @@
 import type { FeaturamaTheme } from './theme/types';
+import type { SupportedLocale } from './utils/locale';
 
 export interface FeatureRequestsScreenProps {
   colorScheme: 'light' | 'dark';
   accentColor: string;
+  /** App-selected language. When omitted, the SDK detects the device language. */
+  locale?: SupportedLocale;
   onClose?: () => void;
   safeAreaTop?: number;
   safeAreaBottom?: number;

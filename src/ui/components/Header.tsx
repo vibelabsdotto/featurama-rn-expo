@@ -16,7 +16,8 @@ export function Header({ strings, onClose, insetTop }: HeaderProps): JSX.Element
   return (
     <View style={[styles.header, { paddingTop: insetTop + 8, borderColor: theme.border }]}>
       {onClose ? (
-        <TouchableOpacity onPress={onClose} style={styles.headerButton}>
+        <TouchableOpacity onPress={onClose} style={styles.headerButton}
+          accessibilityRole="button" accessibilityLabel={strings.close}>
           <CloseIcon size={22} color={theme.text} />
         </TouchableOpacity>
       ) : (

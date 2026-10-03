@@ -10,6 +10,8 @@ export const strings: FeaturamaStrings = {
   descriptionPlaceholder: '기능을 설명해 주세요...',
   submit: '제출',
   cancel: '취소',
+  back: '뒤로',
+  close: '닫기',
   emailPlaceholder: '이메일 주소',
   emailEncouragement: '후속 연락을 위해 이메일을 입력해 주세요',
   emailRequired: '이메일은 필수입니다',
@@ -20,6 +22,7 @@ export const strings: FeaturamaStrings = {
   empty: '아직 요청이 없습니다',
   emptyHint: '첫 번째로 기능을 제안해 보세요!',
   error: '문제가 발생했습니다',
+  mutationError: '변경 사항을 저장하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.',
   retry: '다시 시도',
   comments: '댓글',
   commentsCount: '댓글 {count}개',
@@ -33,5 +36,6 @@ export const strings: FeaturamaStrings = {
   voteComment: '댓글에 투표',
   pendingReview: '검토 대기중',
   badgePlanned: '계획됨',
+  badgeDeclined: '거절됨',
   newRequest: '새 요청',
 };

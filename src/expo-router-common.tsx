@@ -4,6 +4,8 @@ import { BackHandler, Pressable, View } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { FeatureRequestsScreen } from './ui/FeatureRequestsScreen';
 import { createTheme } from './ui/theme/createTheme';
+import { getStringsForLocale } from './ui/strings';
+import { getDeviceLocale } from './ui/utils/locale';
 import type { FeatureRequestsScreenProps, FeaturamaNavigationState } from './ui/types';
 
 /**
@@ -19,6 +21,8 @@ export function ExpoRouterFeatureRequestsScreenBase(
   const router = useRouter();
   const navigation = useNavigation();
   const isStack = navigation.getState()?.type === 'stack';
+  const locale = useMemo(() => props.locale ?? getDeviceLocale(), [props.locale]);
+  const strings = useMemo(() => getStringsForLocale(locale), [locale]);
   const [view, setView] = useState<FeaturamaNavigationState | null>(null);
   const theme = useMemo(() => ({ ...createTheme(props.accentColor, props.colorScheme), ...props.theme }),
     [props.accentColor, props.colorScheme, props.theme]);
@@ -43,7 +47,7 @@ export function ExpoRouterFeatureRequestsScreenBase(
     const action = child ? view.onBack : onClose;
     navigation.setOptions({
       headerShown: true,
-      title: view?.title ?? 'Feature Requests',
+      title: view?.title ?? strings.title,
       headerStyle: { backgroundColor: theme.background },
       headerTintColor: theme.text,
       // PreventRemove sends native dismiss/back gestures to the internal view
@@ -52,7 +56,7 @@ export function ExpoRouterFeatureRequestsScreenBase(
       headerBackVisible: false,
       // Native Stack already centers its custom header view with the title.
       headerLeft: () => (
-        <Pressable onPress={action} accessibilityRole="button" accessibilityLabel={child ? 'Back' : 'Close'}
+        <Pressable onPress={action} accessibilityRole="button" accessibilityLabel={child ? strings.back : strings.close}
           hitSlop={4}
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
@@ -71,7 +75,7 @@ export function ExpoRouterFeatureRequestsScreenBase(
         </Pressable>
       ),
     });
-  }, [nativeHeader, navigation, view, onClose, theme]);
+  }, [nativeHeader, navigation, view, onClose, theme, strings]);
 
   useEffect(() => {
     if (!isChild) return;
@@ -85,6 +89,7 @@ export function ExpoRouterFeatureRequestsScreenBase(
   return (
     <FeatureRequestsScreen
       {...props}
+      locale={locale}
       onClose={onClose}
       nativeHeader={nativeHeader}
       onNavigationChange={nativeHeader ? onNavigationChange : undefined}

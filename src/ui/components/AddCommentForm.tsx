@@ -26,7 +26,7 @@ export function AddCommentForm({ strings, isSubmitting, safeAreaBottom, onSubmit
       setContent('');
     } catch {
       // Keep the draft so the user can retry without retyping it.
-      Alert.alert(strings.error);
+      Alert.alert(strings.error, strings.mutationError);
     } finally {
       submittingRef.current = false;
     }

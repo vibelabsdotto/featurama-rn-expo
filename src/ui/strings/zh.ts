@@ -10,6 +10,8 @@ export const strings: FeaturamaStrings = {
   descriptionPlaceholder: '描述该功能...',
   submit: '提交',
   cancel: '取消',
+  back: '返回',
+  close: '关闭',
   emailPlaceholder: '您的电子邮箱',
   emailEncouragement: '添加您的邮箱以便我们与您联系',
   emailRequired: '电子邮箱为必填项',
@@ -20,6 +22,7 @@ export const strings: FeaturamaStrings = {
   empty: '暂无功能请求',
   emptyHint: '成为第一个提出功能建议的人！',
   error: '出了点问题',
+  mutationError: '无法保存更改。请检查您的网络连接，然后重试。',
   retry: '重试',
   comments: '评论',
   commentsCount: '{count} 条评论',
@@ -33,5 +36,6 @@ export const strings: FeaturamaStrings = {
   voteComment: '为评论投票',
   pendingReview: '待审核',
   badgePlanned: '已计划',
+  badgeDeclined: '已拒绝',
   newRequest: '新请求',
 };

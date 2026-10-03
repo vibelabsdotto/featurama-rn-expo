@@ -10,6 +10,8 @@ export const strings: FeaturamaStrings = {
   descriptionPlaceholder: '機能の説明...',
   submit: '送信',
   cancel: 'キャンセル',
+  back: '戻る',
+  close: '閉じる',
   emailPlaceholder: 'メールアドレス',
   emailEncouragement: 'フォローアップのためメールアドレスを入力してください',
   emailRequired: 'メールアドレスは必須です',
@@ -20,6 +22,7 @@ export const strings: FeaturamaStrings = {
   empty: 'まだリクエストはありません',
   emptyHint: '最初の機能を提案しましょう！',
   error: 'エラーが発生しました',
+  mutationError: '変更を保存できませんでした。接続を確認して、もう一度お試しください。',
   retry: '再試行',
   comments: 'コメント',
   commentsCount: '{count}件のコメント',
@@ -33,5 +36,6 @@ export const strings: FeaturamaStrings = {
   voteComment: 'コメントに投票',
   pendingReview: 'レビュー待ち',
   badgePlanned: '計画中',
+  badgeDeclined: '却下',
   newRequest: '新規リクエスト',
 };

@@ -65,6 +65,12 @@ This mode requires an Expo Router **native Stack** route. In Tabs/other navigato
 
 ## API
 
+### App language and failed writes
+
+Pass `locale="de"` or `locale="en"` to `FeatureRequestsScreen` or either Expo Router adapter to follow your app's language selection. The public `SupportedLocale` type also includes `fr`, `es`, `pt`, `it`, `nl`, `pl`, `ja`, `ko`, and `zh`. Omitting `locale` retains device-language detection. Updating the prop updates UI strings, comment dates, status labels and native Back/Close accessibility labels without remounting the screen or clearing a draft.
+
+Request and comment submission show a localized alert when a write fails and preserve the draft. Only a resolved write clears the form. In-flight submissions and votes use synchronous guards to ignore repeated taps; after failure, retry is manual. The SDK does not automatically retry writes or expose server error payloads to users. A timeout can occur after the server accepted a write, so a later manual retry is not an exactly-once guarantee.
+
 `FeaturamaClient` exposes `getConfig`, `getRequests`, `createRequest`, `updateRequest`, `toggleVote`, `getComments`, `addComment`, and comment-voting methods. The bundled `FeatureRequestsScreen` provides the end-user UI. Consult `src/types/index.ts` for input/output types.
 
 ### Loading requests with an asynchronous identity

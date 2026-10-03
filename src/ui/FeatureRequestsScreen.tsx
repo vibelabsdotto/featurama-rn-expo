@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Alert, View, StyleSheet } from 'react-native';
 import { useFeaturama } from '../hooks/useFeaturama';
 import { useRequests } from '../hooks/useRequests';
 import { useAutoInsets } from './utils/useAutoInsets';
@@ -22,6 +22,7 @@ import type { ProjectConfig, RequestFilter, FeatureRequest, Comment } from '../t
 export function FeatureRequestsScreen({
   colorScheme,
   accentColor,
+  locale: appLocale,
   onClose,
   safeAreaTop,
   safeAreaBottom,
@@ -47,6 +48,7 @@ export function FeatureRequestsScreen({
   const [voterIdError, setVoterIdError] = useState<Error | null>(null);
   const [identityAttempt, setIdentityAttempt] = useState(0);
   const [votingIds, setVotingIds] = useState<Set<string>>(new Set());
+  const votingIdsRef = useRef(new Set<string>());
 
   // Detail view state
   const [selectedRequest, setSelectedRequest] = useState<FeatureRequest | null>(null);
@@ -54,8 +56,9 @@ export function FeatureRequestsScreen({
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentVotingIds, setCommentVotingIds] = useState<Set<string>>(new Set());
+  const commentVotingIdsRef = useRef(new Set<string>());
 
-  const locale = useMemo(() => getDeviceLocale(), []);
+  const locale = useMemo(() => appLocale ?? getDeviceLocale(), [appLocale]);
   const strings = useMemo(() => getStringsForLocale(locale), [locale]);
 
   const showBranding = config ? config.branding.showBranding : true;
@@ -116,17 +119,21 @@ export function FeatureRequestsScreen({
 
   const handleToggleVote = useCallback(
     async (requestId: string) => {
-      if (!voterId || votingIds.has(requestId)) return;
+      if (!voterId || votingIdsRef.current.has(requestId)) return;
 
       // Block voting on pending requests
       const request = data?.items.find((r) => r.id === requestId);
       if (request && !request.isApproved) return;
 
+      votingIdsRef.current.add(requestId);
       setVotingIds((prev) => new Set(prev).add(requestId));
       try {
         await client.toggleVote(requestId, voterId);
         await refetch();
+      } catch {
+        Alert.alert(strings.error, strings.mutationError);
       } finally {
+        votingIdsRef.current.delete(requestId);
         setVotingIds((prev) => {
           const next = new Set(prev);
           next.delete(requestId);
@@ -134,7 +141,7 @@ export function FeatureRequestsScreen({
         });
       }
     },
-    [voterId, votingIds, client, refetch, data]
+    [voterId, client, refetch, data, strings]
   );
 
   // Detail view handlers
@@ -201,8 +208,9 @@ export function FeatureRequestsScreen({
 
   const handleToggleCommentVote = useCallback(
     async (commentId: string) => {
-      if (!voterId || !selectedRequest || commentVotingIds.has(commentId)) return;
+      if (!voterId || !selectedRequest || commentVotingIdsRef.current.has(commentId)) return;
 
+      commentVotingIdsRef.current.add(commentId);
       setCommentVotingIds((prev) => new Set(prev).add(commentId));
       try {
         const { comment: updated } = await client.toggleCommentVote(
@@ -215,7 +223,10 @@ export function FeatureRequestsScreen({
             ? { ...updated, isOwn: updated.isOwn ?? c.isOwn }
             : c))
         );
+      } catch {
+        Alert.alert(strings.error, strings.mutationError);
       } finally {
+        commentVotingIdsRef.current.delete(commentId);
         setCommentVotingIds((prev) => {
           const next = new Set(prev);
           next.delete(commentId);
@@ -223,25 +234,30 @@ export function FeatureRequestsScreen({
         });
       }
     },
-    [voterId, selectedRequest, commentVotingIds, client]
+    [voterId, selectedRequest, client, strings]
   );
 
   const handleToggleRequestVoteInDetail = useCallback(async () => {
-    if (!voterId || !selectedRequest || votingIds.has(selectedRequest.id)) return;
+    if (!voterId || !selectedRequest || votingIdsRef.current.has(selectedRequest.id)) return;
     if (!selectedRequest.isApproved) return;
 
-    setVotingIds((prev) => new Set(prev).add(selectedRequest.id));
+    const requestId = selectedRequest.id;
+    votingIdsRef.current.add(requestId);
+    setVotingIds((prev) => new Set(prev).add(requestId));
     try {
-      const { request: updated, isVoting } = await client.toggleVote(selectedRequest.id, voterId);
-      setSelectedRequest({ ...updated, hasVoted: isVoting });
+      const { request: updated, isVoting } = await client.toggleVote(requestId, voterId);
+      setSelectedRequest((current) => current?.id === requestId ? { ...updated, hasVoted: isVoting } : current);
+    } catch {
+      Alert.alert(strings.error, strings.mutationError);
     } finally {
+      votingIdsRef.current.delete(requestId);
       setVotingIds((prev) => {
         const next = new Set(prev);
-        if (selectedRequest) next.delete(selectedRequest.id);
+        next.delete(requestId);
         return next;
       });
     }
-  }, [voterId, selectedRequest, votingIds, client]);
+  }, [voterId, selectedRequest, client, strings]);
 
   return (
     <ThemeContext.Provider value={theme}>

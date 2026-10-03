@@ -16,6 +16,7 @@ export { FeaturamaError, FeaturamaErrorCode } from './errors';
 export { FeatureRequestsScreen } from './ui/FeatureRequestsScreen';
 export type { FeatureRequestsScreenProps } from './ui/types';
 export type { FeaturamaTheme } from './ui/theme/types';
+export type { SupportedLocale } from './ui/utils/locale';
 
 // Types
 export {

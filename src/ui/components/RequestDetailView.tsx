@@ -29,13 +29,6 @@ interface RequestDetailViewProps {
   onAddComment: (content: string) => Promise<void>;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  Requested: 'New',
-  Roadmap: 'Planned',
-  InProgress: 'In Progress',
-  Done: 'Done',
-  Declined: 'Declined',
-};
 
 export function RequestDetailView({
   request,
@@ -56,6 +49,13 @@ export function RequestDetailView({
   onAddComment,
 }: RequestDetailViewProps): JSX.Element {
   const theme = useTheme();
+  const statusLabels: Record<string, string> = {
+    Requested: strings.filterNew,
+    Roadmap: strings.filterPlanned,
+    InProgress: strings.filterInProgress,
+    Done: strings.filterDone,
+    Declined: strings.badgeDeclined,
+  };
   const hasVoted = request.hasVoted ?? false;
   const voteColor = hasVoted ? theme.accent : theme.textSecondary;
   const voteBg = hasVoted ? theme.accentLight : theme.gray100;
@@ -143,7 +143,8 @@ export function RequestDetailView({
     <View style={styles.container} onLayout={isIOS ? handleContainerLayout : undefined}>
       {/* Header */}
       {!nativeHeader && <View style={[styles.header, { paddingTop: insetTop + 8, backgroundColor: theme.background, borderColor: theme.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.headerButton}>
+        <TouchableOpacity onPress={onBack} style={styles.headerButton}
+          accessibilityRole="button" accessibilityLabel={strings.back}>
           <ChevronLeftIcon size={22} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>{request.title}</Text>
@@ -167,7 +168,7 @@ export function RequestDetailView({
         <View style={styles.badgeRow}>
           <View style={[styles.statusBadge, { backgroundColor: theme.accentLight }]}>
             <Text style={[styles.statusText, { color: theme.accent }]}>
-              {STATUS_LABELS[request.status] ?? request.status}
+              {statusLabels[request.status] ?? request.status}
             </Text>
           </View>
           {!request.isApproved && (

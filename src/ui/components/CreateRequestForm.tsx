@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -43,6 +43,8 @@ export function CreateRequestForm({
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
+  const submittingRef = useRef(false);
+  const confirmingRef = useRef(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const trimmedEmail = email.trim();
@@ -58,6 +60,9 @@ export function CreateRequestForm({
   );
 
   const doSubmit = useCallback(async () => {
+    // A state-only guard still permits two taps before React renders again.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
       await onSubmit(title.trim(), description.trim(), email.trim() || undefined);
@@ -65,25 +70,34 @@ export function CreateRequestForm({
       setDescription('');
       setEmail('');
       setEmailTouched(false);
+    } catch {
+      // Rejection is handled at the event boundary, before any draft reset.
+      Alert.alert(strings.error, strings.mutationError);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
-  }, [title, description, email, onSubmit]);
+  }, [title, description, email, onSubmit, strings]);
 
   const handleSubmit = useCallback(() => {
-    if (!canSubmit) return;
+    if (!canSubmit || submittingRef.current || confirmingRef.current) return;
     if (emailCollection === 'optional' && !trimmedEmail) {
+      confirmingRef.current = true;
       Alert.alert(
         strings.emailSkipTitle,
         strings.emailSkipMessage,
         [
-          { text: strings.cancel, style: 'cancel' },
-          { text: strings.emailSkipConfirm, onPress: doSubmit },
-        ]
+          { text: strings.cancel, style: 'cancel', onPress: () => { confirmingRef.current = false; } },
+          { text: strings.emailSkipConfirm, onPress: () => {
+            confirmingRef.current = false;
+            void doSubmit();
+          } },
+        ],
+        { cancelable: true, onDismiss: () => { confirmingRef.current = false; } }
       );
       return;
     }
-    doSubmit();
+    void doSubmit();
   }, [canSubmit, emailCollection, trimmedEmail, strings, doSubmit]);
 
   return (
@@ -94,7 +108,8 @@ export function CreateRequestForm({
     >
       {/* Header */}
       {!nativeHeader && <View style={[styles.header, { paddingTop: insetTop + 8, borderColor: theme.border }]}>
-        <TouchableOpacity onPress={onCancel} style={styles.headerButton}>
+        <TouchableOpacity onPress={onCancel} style={styles.headerButton}
+          accessibilityRole="button" accessibilityLabel={strings.close}>
           <CloseIcon size={22} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
@@ -124,6 +139,7 @@ export function CreateRequestForm({
         <TextInput
           style={[styles.input, { backgroundColor: theme.secondary, color: theme.text }]}
           value={title}
+          editable={!isSubmitting}
           onChangeText={setTitle}
           placeholder={strings.titlePlaceholder}
           placeholderTextColor={theme.textSecondary}
@@ -132,6 +148,7 @@ export function CreateRequestForm({
         <TextInput
           style={[styles.input, styles.textArea, { backgroundColor: theme.secondary, color: theme.text }]}
           value={description}
+          editable={!isSubmitting}
           onChangeText={setDescription}
           placeholder={strings.descriptionPlaceholder}
           placeholderTextColor={theme.textSecondary}
@@ -144,6 +161,7 @@ export function CreateRequestForm({
             <TextInput
               style={[styles.input, { backgroundColor: theme.secondary, color: theme.text }]}
               value={email}
+              editable={!isSubmitting}
               onChangeText={(text) => {
                 setEmail(text);
                 if (!emailTouched) setEmailTouched(true);

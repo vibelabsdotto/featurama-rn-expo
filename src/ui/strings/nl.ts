@@ -10,6 +10,8 @@ export const strings: FeaturamaStrings = {
   descriptionPlaceholder: 'Beschrijf de functie...',
   submit: 'Verzenden',
   cancel: 'Annuleren',
+  back: 'Terug',
+  close: 'Sluiten',
   emailPlaceholder: 'Je e-mailadres',
   emailEncouragement: 'Voeg je e-mail toe zodat we je kunnen bereiken',
   emailRequired: 'E-mail is verplicht',
@@ -20,6 +22,7 @@ export const strings: FeaturamaStrings = {
   empty: 'Nog geen functieverzoeken',
   emptyHint: 'Wees de eerste die een functie voorstelt!',
   error: 'Er is iets misgegaan',
+  mutationError: 'De wijziging kon niet worden opgeslagen. Controleer je verbinding en probeer het opnieuw.',
   retry: 'Opnieuw proberen',
   comments: 'Reacties',
   commentsCount: '{count} reacties',
@@ -33,5 +36,6 @@ export const strings: FeaturamaStrings = {
   voteComment: 'Stem op reactie',
   pendingReview: 'Wacht op beoordeling',
   badgePlanned: 'Gepland',
+  badgeDeclined: 'Afgewezen',
   newRequest: 'Nieuw verzoek',
 };

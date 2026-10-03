@@ -8,6 +8,8 @@ export interface FeaturamaStrings {
   descriptionPlaceholder: string;
   submit: string;
   cancel: string;
+  back: string;
+  close: string;
   empty: string;
   emptyHint: string;
   emailPlaceholder: string;
@@ -18,6 +20,7 @@ export interface FeaturamaStrings {
   emailSkipConfirm: string;
   emailInvalid: string;
   error: string;
+  mutationError: string;
   retry: string;
   comments: string;
   commentsCount: string;
@@ -31,6 +34,7 @@ export interface FeaturamaStrings {
   voteComment: string;
   pendingReview: string;
   badgePlanned: string;
+  badgeDeclined: string;
   newRequest: string;
 }
 
@@ -44,6 +48,8 @@ export const defaultStrings: FeaturamaStrings = {
   descriptionPlaceholder: 'Describe the feature...',
   submit: 'Submit',
   cancel: 'Cancel',
+  back: 'Back',
+  close: 'Close',
   emailPlaceholder: 'Your email address',
   emailEncouragement: 'Add your email so we can follow up',
   emailRequired: 'Email is required',
@@ -54,6 +60,7 @@ export const defaultStrings: FeaturamaStrings = {
   empty: 'No feature requests yet',
   emptyHint: 'Be the first to suggest a feature!',
   error: 'Something went wrong',
+  mutationError: 'Could not save the change. Please check your connection and try again.',
   retry: 'Retry',
   comments: 'Comments',
   commentsCount: '{count} comments',
@@ -67,5 +74,6 @@ export const defaultStrings: FeaturamaStrings = {
   voteComment: 'Vote for comment',
   pendingReview: 'Pending Review',
   badgePlanned: 'Planned',
+  badgeDeclined: 'Declined',
   newRequest: 'New Request',
 };
