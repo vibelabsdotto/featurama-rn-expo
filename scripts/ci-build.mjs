@@ -36,21 +36,24 @@ export function identity() {
   return { repo, commit: env.CI_COMMIT_SHA, event, ref, tag, name: pkg.name, version: pkg.version };
 }
 function git(args) {
-  return execFileSync('git', ['-c', `safe.directory=${root}`, ...args], {
-    cwd: root, encoding: 'utf8', env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' },
+  return execFileSync('git', ['-c', `safe.directory=${root}`, '-c', 'credential.helper=', '-c', 'core.askPass=/bin/false',
+    '-c', 'http.extraHeader=', '-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', ...args], {
+    cwd: root, encoding: 'utf8',
+    // Git never receives npm credentials, injected Git settings, or user configuration.
+    env: { PATH: '/usr/local/bin:/usr/bin:/bin', GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' },
   }).trim();
 }
-export function checkoutGuard(id) {
+export function checkoutGuard(id, verifyRemote = id.event === 'tag') {
   requireThat(git(['rev-parse', 'HEAD']) === id.commit, 'Checked-out HEAD differs from CI_COMMIT_SHA');
   git(['diff', '--exit-code', 'HEAD', '--', 'package.json', 'package-lock.json', 'src', 'ios', 'android', 'LICENSE', 'README.md',
     '*.podspec', 'react-native.config.js', 'tsconfig*.json', 'example/package.json', 'example/package-lock.json']);
-  if (id.event !== 'tag') return;
-  const args = ['-c', 'credential.helper=', '-c', 'core.askPass=/bin/false', '-c', 'http.extraHeader=', 'fetch', '--no-tags'];
+  if (!verifyRemote) return;
+  const args = ['fetch', '--no-tags'];
   if (git(['rev-parse', '--is-shallow-repository']) === 'true') args.push('--unshallow');
-  git([...args, remote, '+refs/heads/main:refs/ci/main', `+refs/tags/${id.tag}:refs/ci/release-tag`]);
-  requireThat(git(['rev-parse', 'refs/ci/release-tag^{commit}']) === id.commit, 'Remote release tag differs from CI_COMMIT_SHA');
+  git([...args, remote, '+refs/heads/main:refs/ci/main', ...(id.event === 'tag' ? [`+refs/tags/${id.tag}:refs/ci/release-tag`] : [])]);
+  if (id.event === 'tag') requireThat(git(['rev-parse', 'refs/ci/release-tag^{commit}']) === id.commit, 'Remote release tag differs from CI_COMMIT_SHA');
   git(['merge-base', '--is-ancestor', id.commit, 'refs/ci/main']);
-  console.log('Release commit and remote main ancestry verified');
+  console.log('Checkout commit, remote main ancestry and any release tag verified');
 }
 export const integrity = bytes => `sha512-${createHash('sha512').update(bytes).digest('base64')}`;
 function allowedPath(path) {
@@ -61,7 +64,7 @@ function allowedPath(path) {
   requireThat(/^(?:src|lib|ios|android)\//.test(path) || /^(?:package\.json|README\.md|LICENSE|react-native\.config\.js|[^/]+\.podspec)$/.test(path),
     `File outside package allowlist: ${path}`);
 }
-export function inspectArchive(bytes, id) {
+export function inspectArchive(bytes, id, compareGenerated = true) {
   const tar = gunzipSync(bytes, { maxOutputLength: 64 * 1024 * 1024 });
   const files = new Map();
   const text = (header, start, size) => header.subarray(start, start + size).toString('utf8').split('\0')[0];
@@ -106,6 +109,17 @@ export function inspectArchive(bytes, id) {
     requireThat(typeof pkg[field] === 'string' && extensions.some(ext => files.has(pkg[field].replace(/^\.\//, '') + ext)), `Missing ${field} target`);
   }
   for (const [path, bytes] of files) {
+    if (path.startsWith('lib/')) {
+      // Generated output is data, never imported or executed by the publisher.
+      requireThat(/^lib\/(?:(?:commonjs|module)\/.+\.js(?:\.map)?|typescript\/.+\.d\.ts(?:\.map)?)$/.test(path), `Unexpected generated file: ${path}`);
+      requireThat(bytes.length > 0 && !bytes.includes(0) && Buffer.from(bytes.toString('utf8')).equals(bytes), `Invalid generated text: ${path}`);
+      if (path.endsWith('.map')) {
+        const map = JSON.parse(bytes.toString('utf8'));
+        requireThat(map.version === 3 && Array.isArray(map.sources) && map.sources.every(s => typeof s === 'string')
+          && typeof map.mappings === 'string', `Invalid source map: ${path}`);
+      }
+      if (!compareGenerated) continue;
+    }
     const local = join(root, path);
     requireThat(lstatSync(local).isFile() && !lstatSync(local).isSymbolicLink() && readFileSync(local).equals(bytes), `Packed bytes differ from checkout: ${path}`);
   }
@@ -115,22 +129,22 @@ export function inspectArchive(bytes, id) {
     if (['__tests__', '__fixtures__', '__mocks__'].includes(entry.name)) return [];
     return entry.isDirectory() ? walk(path) : [path];
   });
-  for (const path of [...walk('src'), ...walk('lib')]) requireThat(files.has(path), `Missing built/source file: ${path}`);
+  for (const path of [...walk('src'), ...(compareGenerated ? walk('lib') : [])]) requireThat(files.has(path), `Missing built/source file: ${path}`);
   return { files: files.size, pkg };
 }
-export function verifyArtifact(id = identity()) {
-  requireThat(lstatSync(artifacts).isDirectory() && !lstatSync(artifacts).isSymbolicLink(), 'Invalid artifact directory');
-  const manifestPath = join(artifacts, 'release.json');
+export function verifyArtifact(id = identity(), artifactDirectory = artifacts, compareGenerated = true) {
+  requireThat(lstatSync(artifactDirectory).isDirectory() && !lstatSync(artifactDirectory).isSymbolicLink(), 'Invalid artifact directory');
+  const manifestPath = join(artifactDirectory, 'release.json');
   requireThat(lstatSync(manifestPath).isFile() && !lstatSync(manifestPath).isSymbolicLink(), 'Invalid artifact manifest');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   for (const [key, value] of Object.entries(id)) requireThat(manifest[key] === value, `Artifact identity mismatch: ${key}`);
   const filename = `vibelabsdotto-featurama-rn-expo-${id.version}.tgz`;
   requireThat(manifest.filename === filename && manifest.schema === 1, 'Unexpected artifact filename/schema');
-  const path = join(artifacts, filename);
+  const path = join(artifactDirectory, filename);
   requireThat(lstatSync(path).isFile() && !lstatSync(path).isSymbolicLink(), 'Artifact must be a regular file');
   const bytes = readFileSync(path);
   requireThat(integrity(bytes) === manifest.integrity, 'Artifact SHA512 mismatch');
-  const inspected = inspectArchive(bytes, id);
+  const inspected = inspectArchive(bytes, id, compareGenerated);
   requireThat(inspected.files === manifest.files, 'Artifact file count mismatch');
   return { id, manifest, path, bytes };
 }

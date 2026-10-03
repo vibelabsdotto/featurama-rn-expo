@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import { lstatSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { lstatSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { identity, integrity, requireThat, root, stableVersion, verifyArtifact } from './ci-build.mjs';
+import { checkoutGuard, identity, integrity, requireThat, root, stableVersion, verifyArtifact } from './ci-build.mjs';
 
 const registry = 'https://registry.npmjs.org/';
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -112,13 +112,20 @@ function npmPublish(local, dryRun) {
   }
 }
 async function publish() {
-  const mode = process.argv[2] || '--publish';
-  requireThat(process.argv.length <= 3 && ['--verify', '--dry-run', '--publish'].includes(mode), 'Usage: node scripts/ci-publish.mjs [--verify|--dry-run|--publish]');
+  const [mode, artifactDirectory] = process.argv.slice(2);
+  requireThat(process.argv.length === 4 && ['--verify-artifact', '--verify', '--dry-run', '--publish'].includes(mode)
+    && isAbsolute(artifactDirectory), 'Usage: node scripts/ci-publish.mjs --verify-artifact|--verify|--dry-run|--publish ABSOLUTE_ARTIFACT_DIRECTORY');
   const id = identity();
-  requireThat(id.event === 'tag', 'Publication is allowed only for tag events');
-  const local = verifyArtifact(id);
-  // Tag target and remote-main ancestry were checked by the secret-free build step.
-  // Artifact identity binds this step to that same event/ref/tag/commit and built file bytes.
+  requireThat(mode === '--verify-artifact' || id.event === 'tag', 'Publication is allowed only for tag events');
+  if (mode !== '--publish') requireThat(!process.env.NPM_TOKEN && !process.env.NODE_AUTH_TOKEN, 'Verification must not receive npm credentials');
+  requireThat(relative(root, realpathSync(artifactDirectory)).startsWith('../'), 'Artifacts must be outside the trusted publisher checkout');
+  // The YAML bootstrap fetched this checkout independently. Never trust builder Git state.
+  checkoutGuard(id, true);
+  const local = verifyArtifact(id, artifactDirectory, false);
+  if (mode === '--verify-artifact') {
+    console.log(`Isolated artifact verification complete: ${id.name}@${id.version}, ${local.manifest.files} files, SHA512 ${local.manifest.integrity}; no registry write`);
+    return;
+  }
   const state = await preflight(local);
   console.log(`Publish guards passed: ${id.name}@${id.version}, SHA512 ${local.manifest.integrity}, existing=${state.existing}, latest=${state.latest}`);
   if (mode === '--verify') {
@@ -139,7 +146,7 @@ async function publish() {
     return;
   }
   // Recheck local bytes and registry immediately before the only write attempt.
-  verifyArtifact(id);
+  verifyArtifact(id, artifactDirectory, false);
   const fresh = await preflight(local);
   if (fresh.existing) {
     delete process.env.NPM_TOKEN;

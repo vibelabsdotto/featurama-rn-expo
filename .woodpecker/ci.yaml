@@ -28,14 +28,52 @@ steps:
       - apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
       - node scripts/ci-build.mjs
 
-  - name: publish-exact-tarball
-    image: node:24-bookworm-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6
+  - name: verify-isolated-artifact
+    image: &publisher-image node:24-trixie@sha256:be40f6a87b9b22215ddb20da0a2320a5c6d583fe3ee3b0024d9fa4f05b40c8fd
     environment:
+      PUBLISH_MODE: --verify-artifact
+    commands:
+      # This bootstrap is pipeline configuration, never a builder-writable script.
+      # Git/Node come from the pinned image. Nothing is installed in this container.
+      - &trusted-publisher |
+        set +x
+        set -eu
+        export PATH=/usr/local/bin:/usr/bin:/bin
+        unset NODE_OPTIONS NODE_PATH
+        case "$${CI_COMMIT_SHA:-}" in ''|*[!a-f0-9]*) exit 1 ;; esac
+        [ "$${#CI_COMMIT_SHA}" -eq 40 ]
+        shared="$${PWD}"
+        trusted=$(mktemp -d /tmp/featurama-publisher.XXXXXX)
+        trap 'rm -rf -- "$${trusted}"' EXIT
+        case "$${trusted}/" in "$${shared}/"*) exit 1 ;; esac
+        export HOME="$${trusted}" TMPDIR=/tmp
+        cd "$${trusted}"
+        public_git() {
+          env -i PATH=/usr/bin:/bin HOME="$${trusted}" GIT_CONFIG_NOSYSTEM=1 \
+            GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 \
+            /usr/bin/git -c credential.helper= -c core.askPass=/bin/false \
+            -c http.extraHeader= -c core.hooksPath=/dev/null -c init.templateDir= "$@"
+        }
+        public_git init --quiet
+        public_git fetch --quiet --no-tags https://github.com/vibelabsdotto/featurama-rn-expo.git "$${CI_COMMIT_SHA}"
+        public_git -c advice.detachedHead=false checkout --quiet --detach FETCH_HEAD
+        [ "$(public_git rev-parse HEAD)" = "$${CI_COMMIT_SHA}" ]
+        /usr/local/bin/node "$${trusted}/scripts/ci-publish.mjs" "$${PUBLISH_MODE}" "$${shared}/.ci-artifacts"
+    when:
+      - event: [push, manual]
+        branch: main
+        ref: refs/heads/main
+        repo: vibelabsdotto/featurama-rn-expo
+
+  - name: publish-exact-tarball
+    image: *publisher-image
+    environment:
+      PUBLISH_MODE: --publish
       NPM_TOKEN:
         from_secret: npm_token
     commands:
-      # No installation, build or npm lifecycle runs in the secret-bearing step.
-      - node scripts/ci-publish.mjs --publish
+      # The shared workspace supplies archive bytes only, never executable code.
+      - *trusted-publisher
     when:
       - event: tag
         ref: refs/tags/v*
