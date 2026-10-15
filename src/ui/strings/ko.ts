@@ -38,4 +38,9 @@ export const strings: FeaturamaStrings = {
   badgePlanned: '계획됨',
   badgeDeclined: '거절됨',
   newRequest: '새 요청',
+  shippedTitleOwn: '제안하신 아이디어가 반영되었습니다',
+  shippedTitleVoted: '투표하신 아이디어가 반영되었습니다',
+  shippedBody: '\'{title}\' 기능이 이제 앱에 있습니다.',
+  rateApp: '앱 평가하기',
+  rateOpenError: '스토어를 열 수 없습니다.',
 };

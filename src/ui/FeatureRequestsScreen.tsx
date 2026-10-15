@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Alert, View, StyleSheet } from 'react-native';
+import { Alert, Platform, View, StyleSheet } from 'react-native';
 import { useFeaturama } from '../hooks/useFeaturama';
 import { useRequests } from '../hooks/useRequests';
 import { useAutoInsets } from './utils/useAutoInsets';
@@ -9,12 +9,14 @@ import { ThemeContext } from './theme/ThemeContext';
 import { getStringsForLocale } from './strings';
 import { getDeviceLocale } from './utils/locale';
 import { getOrCreateVoterId } from './utils/voterId';
+import { findShippedRequest, storeReviewUrl, type ShippedRequest } from './utils/shippedReview';
 import { Header } from './components/Header';
 import { FilterTabs } from './components/FilterTabs';
 import { CreateRequestForm } from './components/CreateRequestForm';
 import { RequestList } from './components/RequestList';
 import { RequestDetailView } from './components/RequestDetailView';
 import { Branding } from './components/Branding';
+import { ShippedReviewCard } from './components/ShippedReviewCard';
 import { Fab } from './components/Fab';
 import type { FeatureRequestsScreenInternalProps } from './types';
 import type { ProjectConfig, RequestFilter, FeatureRequest, Comment } from '../types';
@@ -30,6 +32,7 @@ export function FeatureRequestsScreen({
   nativeHeader = false,
   onNavigationChange,
   theme: themeOverrides,
+  onRequestShipped,
 }: FeatureRequestsScreenInternalProps): JSX.Element {
   const theme = useMemo(
     () => ({ ...createTheme(accentColor, colorScheme), ...themeOverrides }),
@@ -41,7 +44,12 @@ export function FeatureRequestsScreen({
 
   const { client } = useFeaturama();
 
-  const [config, setConfig] = useState<ProjectConfig | null>(null);
+  const [configState, setConfig] = useState<{ client: typeof client; value: ProjectConfig | null } | null>(null);
+  const config = configState?.client === client ? configState.value : null;
+  const configSettled = configState?.client === client;
+  const [shipped, setShipped] = useState<ShippedRequest | null>(null);
+  const onRequestShippedRef = useRef(onRequestShipped);
+  onRequestShippedRef.current = onRequestShipped;
   const [activeFilter, setActiveFilter] = useState<RequestFilter>('new');
   const [isAdding, setIsAdding] = useState(false);
   const [voterId, setVoterId] = useState<string | null>(null);
@@ -86,12 +94,33 @@ export function FeatureRequestsScreen({
   useEffect(() => {
     let active = true;
     client.getConfig().then((result) => {
-      if (active) setConfig(result);
+      if (active) setConfig({ client, value: result });
     }).catch(() => {
-      // Config fetch failed — use defaults silently
+      // Config fetch failed, use defaults silently.
+      if (active) setConfig({ client, value: null });
     });
     return () => { active = false; };
   }, [client]);
+
+  const storeUrl = storeReviewUrl(config?.reviewLinks, Platform.OS);
+  const hasCallback = onRequestShipped !== undefined;
+
+  // Runs once per board visit, after identity and config are known.
+  useEffect(() => {
+    setShipped(null);
+    if (voterId === null || !configSettled) return;
+    let active = true;
+    findShippedRequest(client, voterId, storeUrl !== null || hasCallback).then((result) => {
+      if (!active || !result) return;
+      setShipped(result);
+      onRequestShippedRef.current?.(result.request);
+    }).catch(() => {
+      // The review card is optional. Storage or network failures must not affect the board.
+    });
+    return () => { active = false; };
+    // storeUrl and hasCallback are read once per visit on purpose.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, voterId, configSettled]);
 
   const handleRefetch = useCallback(async () => {
     if (voterId === null) {
@@ -310,6 +339,16 @@ export function FeatureRequestsScreen({
               onToggleVote={handleToggleVote}
               onRefetch={handleRefetch}
               onRequestPress={handleRequestPress}
+              header={shipped && storeUrl ? (
+                <ShippedReviewCard
+                  request={shipped.request}
+                  isOwn={shipped.isOwn}
+                  storeUrl={storeUrl}
+                  strings={strings}
+                  onPress={handleRequestPress}
+                  onDismiss={() => setShipped(null)}
+                />
+              ) : null}
             />
             {showBranding && <Branding safeAreaBottom={insets.bottom} />}
             <Fab onPress={() => setIsAdding(true)} safeAreaBottom={insets.bottom} />

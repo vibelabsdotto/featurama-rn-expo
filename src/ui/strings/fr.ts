@@ -38,4 +38,9 @@ export const strings: FeaturamaStrings = {
   badgePlanned: 'Planifié',
   badgeDeclined: 'Refusé',
   newRequest: 'Nouvelle demande',
+  shippedTitleOwn: 'Votre idée est disponible',
+  shippedTitleVoted: 'Une idée que vous avez soutenue est disponible',
+  shippedBody: '« {title} » est maintenant dans l\'app.',
+  rateApp: 'Noter l\'app',
+  rateOpenError: 'Impossible d\'ouvrir le store.',
 };

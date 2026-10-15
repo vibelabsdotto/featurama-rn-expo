@@ -167,7 +167,14 @@ export interface ToggleVoteResult {
 /**
  * Project configuration returned from the API
  */
+export interface ReviewLinksConfig {
+  appStoreUrl: string | null;
+  playStoreUrl: string | null;
+}
+
 export interface ProjectConfig {
+  /** Optional for compatibility with servers predating store review links. */
+  reviewLinks?: ReviewLinksConfig | null;
   branding: {
     showBranding: boolean;
   };

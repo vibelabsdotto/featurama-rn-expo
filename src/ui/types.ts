@@ -1,4 +1,5 @@
 import type { FeaturamaTheme } from './theme/types';
+import type { FeatureRequest } from '../types';
 import type { SupportedLocale } from './utils/locale';
 
 export interface FeatureRequestsScreenProps {
@@ -10,6 +11,11 @@ export interface FeatureRequestsScreenProps {
   safeAreaTop?: number;
   safeAreaBottom?: number;
   keyboardVerticalOffset?: number;
+  /**
+   * Called once when a request this device submitted or voted for has moved to Done
+   * since the last board visit. Use it to call your own native review prompt.
+   */
+  onRequestShipped?: (request: FeatureRequest) => void;
   /**
    * Override any theme color generated from accentColor/colorScheme.
    * Partial — only the keys you provide will be overridden.

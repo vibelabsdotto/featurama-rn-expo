@@ -36,6 +36,12 @@ export interface FeaturamaStrings {
   badgePlanned: string;
   badgeDeclined: string;
   newRequest: string;
+  shippedTitleOwn: string;
+  shippedTitleVoted: string;
+  /** {title} is replaced with the request title. */
+  shippedBody: string;
+  rateApp: string;
+  rateOpenError: string;
 }
 
 export const defaultStrings: FeaturamaStrings = {
@@ -76,4 +82,9 @@ export const defaultStrings: FeaturamaStrings = {
   badgePlanned: 'Planned',
   badgeDeclined: 'Declined',
   newRequest: 'New Request',
+  shippedTitleOwn: 'Your idea is live',
+  shippedTitleVoted: 'An idea you voted for is live',
+  shippedBody: '"{title}" is now in the app.',
+  rateApp: 'Rate the app',
+  rateOpenError: 'Couldn\'t open the store.',
 };

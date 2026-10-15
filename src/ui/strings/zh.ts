@@ -38,4 +38,9 @@ export const strings: FeaturamaStrings = {
   badgePlanned: '已计划',
   badgeDeclined: '已拒绝',
   newRequest: '新请求',
+  shippedTitleOwn: '您的想法已上线',
+  shippedTitleVoted: '您投票支持的想法已上线',
+  shippedBody: '「{title}」现已加入应用。',
+  rateApp: '为应用评分',
+  rateOpenError: '无法打开应用商店。',
 };

@@ -73,6 +73,24 @@ Request and comment submission show a localized alert when a write fails and pre
 
 `FeaturamaClient` exposes `getConfig`, `getRequests`, `createRequest`, `updateRequest`, `toggleVote`, `getComments`, `addComment`, and comment-voting methods. The bundled `FeatureRequestsScreen` provides the end-user UI. Consult `src/types/index.ts` for input/output types.
 
+### Review prompt after a shipped request
+
+Set the App Store and Google Play links in the project dashboard. `getConfig()` returns them as `reviewLinks: { appStoreUrl, playStoreUrl }`. Older servers omit the field.
+
+When a request this device submitted or voted for has moved to Done since the last board visit, the board shows a dismissible card at the top of the list: "Your idea is live", the request title and a "Rate the app" button. The button opens the App Store review page on iOS and the Google Play listing on Android. Other platforms, or a missing link for the running platform, get no card. Each request shows the card once, and a device sees at most one card every 90 days. The first board visit only records which requests are already done. Declined requests never trigger it.
+
+The SDK never calls the native review prompt. To use it, pass `onRequestShipped`. It fires under the same rules, also when no store link is set:
+
+```tsx
+import * as StoreReview from 'expo-store-review';
+
+<FeatureRequestsScreen
+  colorScheme="light"
+  accentColor="#4cb211"
+  onRequestShipped={() => { void StoreReview.requestReview(); }}
+/>
+```
+
 ### Loading requests with an asynchronous identity
 
 The bundled screen waits for its persisted device identity before fetching requests, so own pending requests remain visible. Identity-storage failures show a retry action instead of fetching anonymously.

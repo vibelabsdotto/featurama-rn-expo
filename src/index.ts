@@ -38,6 +38,7 @@ export type {
   ToggleVoteResult,
   FeaturamaContextValue,
   ProjectConfig,
+  ReviewLinksConfig,
   Comment,
   CreateCommentInput,
 } from './types';

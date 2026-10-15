@@ -1,4 +1,4 @@
-import type { JSX } from 'react';
+import type { JSX, ReactElement } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { RequestCard } from './RequestCard';
@@ -15,6 +15,8 @@ interface RequestListProps {
   onToggleVote: (id: string) => void;
   onRefetch: () => Promise<void>;
   onRequestPress: (request: FeatureRequest) => void;
+  /** First element of the scrolling list. Not shown in loading, error or empty states. */
+  header?: ReactElement | null;
 }
 
 export function RequestList({
@@ -27,6 +29,7 @@ export function RequestList({
   onToggleVote,
   onRefetch,
   onRequestPress,
+  header,
 }: RequestListProps): JSX.Element {
   const theme = useTheme();
 
@@ -76,6 +79,7 @@ export function RequestList({
           />
         )}
         keyExtractor={(item) => item.id}
+        ListHeaderComponent={header}
         contentContainerStyle={[styles.listContent, { paddingBottom: safeAreaBottom + 80 }]}
         showsVerticalScrollIndicator={false}
         refreshing={isLoading}
